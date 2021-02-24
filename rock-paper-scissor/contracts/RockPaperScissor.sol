@@ -111,7 +111,7 @@ contract RockPaperScissor {
         }
     }
 
-    function setWinner(Game storage game, address player) private {
+    function setWinner(Game memory game, address player) private {
         require(game.winner == address(0));
         game.winner = player;
         // Transfer money to winner
@@ -120,7 +120,7 @@ contract RockPaperScissor {
 
     /// Get the current adversary of the
     /// specified player
-    function getAdversary(address player) private view inAGame returns (address) {
+    function getAdversary(address player) public view inAGame returns (address) {
         if(playersInAGame[player].player1 != player){
             return playersInAGame[player].player1;
         }
