@@ -1,91 +1,64 @@
 const RockPaperScissor = artifacts.require("RockPaperScissor");
 
+const ACTION_NOT_PLAYED = 0;
 const ROCK = 1;
 const PAPER = 2;
 const SCISSOR = 3;
 
-contract("RockPaerScissor", accounts => {
+contract("RockPaperScissor", accounts => {
     it("should play a full game", () => {
         return RockPaperScissor.deployed()
-            .then(instance => {
+            .then(async function(instance){
 
                 // Check pre game created
-                instance.playersOpenForChallenge(accounts[0])
-                    .then(player1CreatedGame => assert.equal(player1CreatedGame, false));
-
-                console.log("aa")
+                var player1CreatedGame = await instance.playersOpenForChallenge(accounts[0])
+                assert.equal(player1CreatedGame, false)
 
                 // Create a game
-                instance.createGame().then(() => {
-                    console.log("Creating game");
-                    instance.playersOpenForChallenge(accounts[0])
-                        .then(player1CreatedGame => assert.equal(player1CreatedGame, true))
-                        .then(() => {
-                            console.log("111");
-                            // Game created
-                            // Let player 2 join the game
-                            instance.playersInAGame(accounts[0]).then(game => {
-                                console.log("AAA");
-                                console.log(game);
-                                assert.equal(game.player2, "0x0333");
-                            });
-                        })
-                })
+                await instance.createGame();
+                var player1CreatedGame = await instance.playersOpenForChallenge(accounts[0]);
+                assert.equal(player1CreatedGame, true)
+
+                // Let player 2 join the game
+                var game = await instance.getGameOfPlayer(accounts[0]);
+                assert.equal(game.player1, accounts[0]);
+                assert.equal(game.player2, "0x0000000000000000000000000000000000000000");
+
+                await instance.joinGame(accounts[0], {from: accounts[1]});
+                var game = await instance.getGameOfPlayer(accounts[0]);
+                assert.equal(game.player1, accounts[0]);
+                assert.equal(game.player2, accounts[1]);
+
+                // Prechecks before playing
+                var player1Action = await instance.playersAction(accounts[0]);
+                var player2Action = await instance.playersAction(accounts[1]); 
+
+                assert.equal(player1Action, ACTION_NOT_PLAYED);
+                assert.equal(player2Action, ACTION_NOT_PLAYED);
+
+                // Let player 1 play
+                await instance.makeAction(ROCK)
+
+                var player1Action = await instance.playersAction(accounts[0]);
+                var player2Action = await instance.playersAction(accounts[1]); 
+
+                assert.equal(player1Action, ROCK);
+                assert.equal(player2Action, ACTION_NOT_PLAYED);
+
+                // Let player 2 play
+                await instance.makeAction(PAPER, {from: accounts[1]})
+
+                var player1Action = await instance.playersAction(accounts[0]);
+                var player2Action = await instance.playersAction(accounts[1]); 
+
+                assert.equal(player1Action, ROCK);
+                assert.equal(player2Action, PAPER);
+
+                // Check that there is a winner
+                var game = await instance.getGameOfPlayer(accounts[0]);
+                assert.equal(game.winner, accounts[1]);
+
+                //todo: check that everything resets
             })
         });
-
-    // let gameCreatedBefore = ;
-    // console.log("Account 1 created game: " + gameCreatedBefore);
-
-    // console.log("Creating game...");
-    // try{
-    //     await rockPaperScissor.createGame();
-
-    //     let gameCreatedAfter = await rockPaperScissor.playersOpenForChallenge(accounts[0]);
-    //     console.log("Account 1 created game: " + gameCreatedAfter);
-    // }catch(err){
-    //     console.log("Error: " + err.reason);
-    // }
-
-    // // Let account 2 join the match
-
-    // console.log("Player 2 joining game...")
-    // try{
-    //     await rockPaperScissor.joinGame(accounts[0], {from: accounts[1]});
-    // }catch(err){
-    //     console.log("Error: " + err.reason);
-    // }
-
-    // console.log("Game status:")
-    // let game = await rockPaperScissor.playersInAGame(accounts[1]);
-    // console.log(game);
-
-    // let player1Action = await rockPaperScissor.getPlayerAction(accounts[0]);
-    // let player2Action = await rockPaperScissor.getPlayerAction(accounts[1]); 
-
-    // console.log("Player 1 action: " + player1Action.toNumber());
-    // console.log("Player 2 action: " + player2Action.toNumber());
-    // console.log("Winner: " + game.winner)
-
-    // console.log("Player 1 play...")
-    // try{
-    //     await rockPaperScissor.makeAction(ROCK)
-    // }catch(err){
-    //     console.log("Error: " + err.reason);
-    // }
-
-    // console.log("Player 2 play...")
-    // try{
-    //     await rockPaperScissor.makeAction(PAPER, {from: accounts[1]})
-    // }catch(err){
-    //     console.log("Error: " + err.reason);
-    // }
-
-    // let player1Action2 = await rockPaperScissor.getPlayerAction(accounts[0]);
-    // let player2Action2 = await rockPaperScissor.getPlayerAction(accounts[1]); 
-
-    // console.log("Player 1 action: " + player1Action2.toNumber());
-    // console.log("Player 2 action: " + player2Action2.toNumber());
-    // console.log("Winner: " + game.winner)
-    // });
 });
